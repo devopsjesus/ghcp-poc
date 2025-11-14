@@ -53,6 +53,35 @@ Describe 'Function Remove-Image' {
             Should -Invoke Write-Message -Times 1 -Scope 'Context' -Exactly -ModuleName $global:moduleName
         }
     }
+
+    Context 'Image does exist' {
+
+        BeforeAll {
+
+            Mock -CommandName Get-AzImage -ModuleName $global:moduleName -MockWith {
+                $image = [PSCustomObject]@{
+                    ResourceGroupName = 'foo'
+                    Name              = 'bar'
+                    Location          = 'eastus'
+                    Id                = '/subscriptions/baz/resourceGroups/foo/providers/Microsoft.Compute/images/bar'
+                }
+                $image.PSObject.TypeNames.Insert(0, 'Microsoft.Azure.Commands.Compute.Automation.Models.PSImage')
+                return $image
+            }
+
+            Mock -CommandName Remove-AzImage -ModuleName $global:moduleName
+
+            Remove-Image @params
+        }
+
+        It 'Removes the image' {
+
+            Should -Invoke Select-AzSubscription -Times 1 -Scope 'Context' -Exactly -ModuleName $global:moduleName
+            Should -Invoke Get-AzImage -Times 1 -Scope 'Context' -Exactly -ModuleName $global:moduleName
+            Should -Invoke Write-Message -Times 1 -Scope 'Context' -Exactly -ModuleName $global:moduleName
+            Should -Invoke Remove-AzImage -Times 1 -Scope 'Context' -Exactly -ModuleName $global:moduleName
+        }
+    }
 }
 
 InModuleScope $global:moduleName {
